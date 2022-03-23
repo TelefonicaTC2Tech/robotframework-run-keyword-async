@@ -27,7 +27,7 @@ Alternatively download directly from the Python Package Index:
 
 If you want to use different custom pools to ensure isolated context could use:
 
-**1. To run a keyword asynchronously:**                
+**1. To run a keyword asynchronously with custom pool:**                
      ${handle}=   Run Keyword Async With Custom Pool   <pool>   <keyword name>   <first argument>   <second argument>
        (Note: It takes only args as arguments, kwargs is not supported) 
 
@@ -37,7 +37,7 @@ If you want to use different custom pools to ensure isolated context could use:
        (Note: timeout is an optional parameter, default timeout is 60 seconds)
 
 **Testing**
-     - Added __test__ folder with basic acceptance test suite.
+     - Added test folder with basic acceptance test suite.
      - Added Dockerfile with basic image definition to allow acceptance testing avoiding OS configuration issues:
           - like AttributeError: Can't pickle local object 'runKeywordAsync._threaded.<locals>.wrapped_f').
      - Added make file to build testing environment and launch tests
