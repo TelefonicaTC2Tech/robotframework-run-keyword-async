@@ -1,0 +1,6 @@
+*.xml
+*.html
+*.txt
+__pycache__
+.vscode
+.DS_Store
