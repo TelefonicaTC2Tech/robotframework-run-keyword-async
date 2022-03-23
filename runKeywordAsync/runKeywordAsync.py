@@ -7,51 +7,74 @@ from robot.output.logger import LOGGER
 class runKeywordAsync:
     def __init__(self):
         self._thread_pool = {}
+        self._thread_pool['default']={}
         self._last_thread_handle = 1
-        #self._robot_log_level = BuiltIn().get_variable_value("${LOG_LEVEL}")
+        self._last_thread_handle_pool = {}
+        self._last_thread_handle_pool['default'] = 1 
 
     def run_method_async(self, keyword, *args, **kwargs):
-        #BuiltIn().set_log_level("NONE")
-        handle = self._last_thread_handle
+        handle = self._last_thread_handle_pool['default']
         thread = self._threaded_method(keyword, *args, **kwargs)
         thread.start()
-        self._thread_pool[handle] = thread
-        self._last_thread_handle += 1
+        self._thread_pool['default'][handle] = thread
+        self._last_thread_handle_pool['default'] = int(self._last_thread_handle_pool['default']) + 1
+        return handle
+    
+    def run_method_async_with_custom_pool(self, pool, keyword, *args, **kwargs):
+        if pool not in self._thread_pool:
+            self._thread_pool[pool] = {}
+            self._last_thread_handle_pool[pool] = 1        
+        handle = self._last_thread_handle_pool[pool]
+        thread = self._threaded_method(keyword, *args, **kwargs)
+        thread.start()
+        self._thread_pool[pool][handle] = thread
+        self._last_thread_handle_pool[pool] = int(self._last_thread_handle_pool[pool]) + 1
         return handle
 
     def run_keyword_async(self, keyword, *args):
-        #BuiltIn().set_log_level("NONE")
-        handle = self._last_thread_handle
+        handle = self._last_thread_handle_pool['default']
         thread = self._threaded(keyword, *args)
         thread.start()
-        self._thread_pool[handle] = thread
-        self._last_thread_handle += 1
+        self._thread_pool['default'][handle] = thread
+        self._last_thread_handle_pool['default'] = int(self._last_thread_handle_pool['default']) + 1 
+        return handle
+    
+    def run_keyword_async_with_custom_pool(self, pool ,keyword, *args):
+        if pool not in self._thread_pool:
+            self._thread_pool[pool] = {}
+            self._last_thread_handle_pool[pool] = 1
+        handle = self._last_thread_handle_pool[pool]
+        thread = self._threaded(keyword, *args)
+        thread.start()
+        self._thread_pool[pool][handle] = thread
+        self._last_thread_handle_pool[pool] = int(self._last_thread_handle_pool[pool]) + 1
         return handle
 
-    def wait_async_all(self, timeout=60):
+    def wait_async_all(self, pool='default', timeout=60):
         timeout = int(timeout)
         results = []
-        for thread in self._thread_pool:
+        if pool not in self._thread_pool:
+            raise Exception("Pool " + pool + " has not been created")
+        for thread in self._thread_pool[pool]:
+            thread_id = str(thread)
             try:
-              result = self._thread_pool[thread].result_queue.get(True, timeout)
+              result = self._thread_pool[pool][thread].result_queue.get(True, timeout)
               results.append(result)
             except:
-              #BuiltIn().set_log_level(self._robot_log_level)
-              for thread in self._thread_pool:
-                  self._thread_pool[thread].terminate()
-              raise Exception("Process " + str(thread) + " Failed")
-        #BuiltIn().set_log_level(self._robot_log_level)
-        self._thread_pool = {}
-        self._last_thread_handle = 1
+              for thread in self._thread_pool[pool]:
+                  self._thread_pool[pool][thread].terminate()
+              self._last_thread_handle_pool[pool] = 1
+              raise Exception("Process " + thread_id + " Failed")
+        self._thread_pool[pool] = {}
+        self._last_thread_handle_pool[pool] = 1
         return results
 
-    def get_async_return(self, handle, timeout=60):
+    def get_async_return(self, handle, pool='default', timeout=60):
         timeout = int(timeout)
-        if handle in self._thread_pool:
+        if handle in self._thread_pool[pool]:
             try:
-              result = self._thread_pool[handle].result_queue.get(True, timeout)
+              result = self._thread_pool[pool][handle].result_queue.get(True, timeout)
               del self._thread_pool[handle]
-              BuiltIn().set_log_level(self._robot_log_level)
               return result
             except:
               raise Exception("Process " + str(handle) + " Failed")
